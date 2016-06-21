@@ -1,0 +1,8 @@
+class_name: ApiTester
+modules:
+    enabled:
+        - \Helper\Api
+        - REST:
+            url: 'http://local.prism.com'
+            depends: PhpBrowser
+            part: Json

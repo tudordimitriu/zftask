@@ -52,6 +52,18 @@ return array(
                     ),
                 ),
             ),
+            'application-rest' => array(
+                'type'    => 'segment',
+                'options' => array(
+                    'route'    => '/application-rest[/isbn/:id][/author/:author][/title/:title][/rating/:minrating][/published-after/:published_after][/published-before/:published_before]',
+                    'constraints' => array(
+                        'id'     => '[0-9]+',
+                    ),
+                    'defaults' => array(
+                        'controller' => 'Application\Controller\BookSearch',
+                    ),
+                ),
+            ),
         ),
     ),
     'service_manager' => array(
@@ -61,6 +73,9 @@ return array(
         ),
         'factories' => array(
             'translator' => 'Zend\Mvc\Service\TranslatorServiceFactory',
+            'dbadapter' => 'Application\Model\DbAdapterFactory',
+            'bookstoragemodel' => 'Application\Model\BookStorageModelFactory',
+            'booksearch' => 'Application\Model\BookSearchFactory',
         ),
     ),
     'translator' => array(
@@ -75,7 +90,8 @@ return array(
     ),
     'controllers' => array(
         'invokables' => array(
-            'Application\Controller\Index' => Controller\IndexController::class
+            'Application\Controller\Index' => 'Application\Controller\IndexController',
+            'Application\Controller\BookSearch' => 'Application\Controller\BookSearchController',
         ),
     ),
     'view_manager' => array(
@@ -92,6 +108,9 @@ return array(
         ),
         'template_path_stack' => array(
             __DIR__ . '/../view',
+        ),
+        'strategies' => array(
+            'ViewJsonStrategy',
         ),
     ),
     // Placeholder for console routes
