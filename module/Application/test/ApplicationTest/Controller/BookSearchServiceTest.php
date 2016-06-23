@@ -312,4 +312,21 @@ class BookSearchServiceTest extends PHPUnit_Framework_TestCase
 
         $this->assertArrayHasKey('minimum_rating', $bookSearchService->searchBooks()['error']);
     }
+
+    public function testExceptionHandling()
+    {
+        $params = array('minrating' => '3.5');
+        $bookSearchService = clone $this->bookSearchService;
+
+        $storageModel = clone $this->storage;
+        $storageModel->expects($this->once())
+            ->method('searchBooks')
+            ->will($this->throwException(new \Exception));
+
+        $bookSearchService->exchangeArray($params);
+        $bookSearchService->setStorageModel($this->storage);
+
+        $this->assertArrayHasKey('error', $bookSearchService->searchBooks());
+
+    }
 }

@@ -96,7 +96,14 @@ class BookSearch
         if(!$this->getInputFilter()->isValid()) {
             return array('error' => $this->getInputFilter()->getMessages());
         }
-        return array('data' => $this->getStorageModel()->searchBooks($filters));
+        //calling the storage model's search method in a try block in order to avoid potential db errors direclty to the
+        // user.
+        try {
+            return array('data' => $this->getStorageModel()->searchBooks($filters));
+        } catch (\Exception $exception) {
+            return array('error' => 'Something went wront in the storage layer. Please contact an admin :).');
+            //@todo add code to handle logging error details for later
+        }
     }
 
     /**

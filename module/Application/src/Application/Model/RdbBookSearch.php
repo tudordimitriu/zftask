@@ -8,10 +8,11 @@
 
 namespace Application\Model;
 
-use Zend\Db\Adapter\Adapter;
+use Zend\Db\Adapter\AdapterInterface;
 use Zend\Db\Sql\Predicate\Expression;
 use Zend\Db\Sql\Sql;
 use Zend\Db\Sql\Where;
+use Zend\InputFilter\InputFilterInterface;
 
 /**
  * Class RdbBookSearch
@@ -22,18 +23,20 @@ use Zend\Db\Sql\Where;
 class RdbBookSearch implements BookStorageModelInterface
 {
     /**
-     * @var Adapter
+     * @var AdapterInterface
      */
     protected $dbAdapter;
+    protected $inputFilter;
 
     /**
      * RdbBookSearch constructor.
      * Used by the BookStorageModelFactory to inject the Database Adapter
-     * @param Adapter $dbAdapter
+     * @param AdapterInterface $dbAdapter
      */
-    public function __construct(Adapter $dbAdapter)
+    public function __construct(AdapterInterface $dbAdapter, InputFilterInterface $inputFilter)
     {
         $this->dbAdapter = $dbAdapter;
+        $this->inputFilter = $inputFilter;
     }
 
     /**
@@ -41,13 +44,19 @@ class RdbBookSearch implements BookStorageModelInterface
      * to the book search service.
      * @param array $filters
      * @return array
+     * @throws \Exception
      */
     public function searchBooks(array $filters)
     {
+        $this->inputFilter->setData($filters);
+        if(!$valid = $this->inputFilter->isValid()) {
+            throw new \Exception('Filters are not valid');
+        }
+        $filters = $this->inputFilter->getValues();
         $where = array();
 
         if(isset($filters['title'])) {
-            $where['Title'] = $filters['title'];
+            $where[] = new Expression('LOWER(Title) LIKE ?', array('%'.$filters['title'].'%'));
         }
         if(isset($filters['isbn10'])) {
             $where['ISBN10'] = $filters['isbn10'];
@@ -73,13 +82,13 @@ class RdbBookSearch implements BookStorageModelInterface
         $authorCondition = array();
         $authorParams = array();
         if(isset($filters['author_last_name'])) {
-            $authorCondition[] = 'WhereAuthor.LastName = ? ';
-            $authorParams[] = $filters['author_last_name'];
+            $authorCondition[] = 'LOWER( WhereAuthor.LastName ) LIKE ? ';
+            $authorParams[] = '%'.$filters['author_last_name'].'%';
         }
 
         if(isset($filters['author_first_name'])) {
-            $authorCondition[] = 'WhereAuthor.FirstName = ? ';
-            $authorParams[] = $filters['author_first_name'];
+            $authorCondition[] = 'LOWER( WhereAuthor.FirstName ) LIKE ? ';
+            $authorParams[] = '%'.$filters['author_first_name'].'%';
         }
 
         $sql = new Sql($this->dbAdapter);
@@ -125,6 +134,7 @@ class RdbBookSearch implements BookStorageModelInterface
         $select->order('Title.Title');
 
         $statement = $sql->prepareStatementForSqlObject($select);
+
         $results = $statement->execute();
         $return = array();
         $oldId = null;
